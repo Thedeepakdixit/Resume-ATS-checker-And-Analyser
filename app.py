@@ -1,76 +1,63 @@
 from dotenv import load_dotenv
-
-load_dotenv()
 import base64
 import streamlit as st
 import os
 import io
-from PIL import Image 
-import pdf2image 
+from PIL import Image
+from PyPDF2 import PdfReader
 import google.generativeai as genai
 import subprocess
-import os
 
-
+load_dotenv()
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-def get_gemini_response(input,pdf_cotent,prompt):
-    model=genai.GenerativeModel('gemini-1.5-flash')
-    response=model.generate_content([input,pdf_content[0],prompt])
+
+def get_gemini_response(input, pdf_content, prompt):
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    response = model.generate_content([input, pdf_content[0], prompt])
     return response.text
-def check_poppler_installed():
-    try:
-        subprocess.check_output(['pdftoppm', '-v'])
-        return True
-    except subprocess.CalledProcessError:
-        return False
+
 
 def input_pdf_setup(uploaded_file):
     if uploaded_file is not None:
-        ## Convert the PDF to image
-        images=pdf2image.convert_from_bytes(uploaded_file.read())
+        # Read PDF content using PyPDF2
+        pdf_reader = PdfReader(uploaded_file)
+        pdf_text = ""
+        for page in pdf_reader.pages:
+            pdf_text += page.extract_text()
 
-        first_page=images[0]
+        if not pdf_text.strip():
+            raise ValueError("No extractable text found in the PDF. Ensure the PDF contains text layers.")
 
-        # Convert to bytes
-        img_byte_arr = io.BytesIO()
-        first_page.save(img_byte_arr, format='JPEG')
-        img_byte_arr = img_byte_arr.getvalue()
-
+        # Prepare PDF content for API
         pdf_parts = [
             {
-                "mime_type": "image/jpeg",
-                "data": base64.b64encode(img_byte_arr).decode()  # encode to base64
+                "mime_type": "text/plain",
+                "data": base64.b64encode(pdf_text.encode('utf-8')).decode()  # encode to base64
             }
         ]
         return pdf_parts
     else:
         raise FileNotFoundError("No file uploaded")
 
+
 ## Streamlit App
-
-st.set_page_config(page_title="ATS Resume EXpert")
+st.set_page_config(page_title="ATS Resume Expert")
 st.header("ATS Tracking System")
-input_text=st.text_area("Job Description: ",key="input")
-uploaded_file=st.file_uploader("Upload your resume(PDF)...",type=["pdf",])
 
+input_text = st.text_area("Job Description: ", key="input")
+uploaded_file = st.file_uploader("Upload your resume (PDF)...", type=["pdf"])
 
 if uploaded_file is not None:
     st.write("PDF Uploaded Successfully")
 
-
 submit1 = st.button("Tell Me About the Resume")
-
 submit2 = st.button("How Can I Improvise my Skills")
-
 submit3 = st.button("Percentage match")
-
-submit4 = st.button("tell me Keywords missing")
-
-submit5 = st.button("make my resume match with the job description")
-
-submit6 = st.button("suggest some certifications and courses to improve my resume")
+submit4 = st.button("Tell Me Keywords Missing")
+submit5 = st.button("Make My Resume Match the Job Description")
+submit6 = st.button("Suggest Some Certifications and Courses to Improve My Resume")
 
 input_prompt1 = """
  You are an experienced Technical Human Resource Manager with experience in field of any one job role from  Frontend Developer, Backend Developer, Full Stack Developer, Mobile App Developer, Game Developer , Data Scientist, Data Analyst, Data Engineer, Business Intelligence Analyst , AI Engineer, Machine Learning Engineer, Deep Learning Engineer, NLP Engineer, Cybersecurity Analyst, Ethical Hacker, Security Engineer, Incident Responder, Cloud Engineer, DevOps Engineer, Site Reliability Engineer (SRE), Quality Assurance Engineer, Automation Tester , Network Administrator, System Administrator, Cloud Systems Administrator, Database Administrator, Big Data Engineer, Blockchain Developer, AR/VR Developer, IoT Developer, Research Scientist, University Lecturer/Professor, Product Manager, UI/UX Designer, Tech Support Engineer, Freelancer/Consultant,your task is to review the provided resume against the job description. 
@@ -104,62 +91,54 @@ Analyze the provided resume and job description to recommend relevant certificat
 
 if submit1:
     if uploaded_file is not None:
-        pdf_content=input_pdf_setup(uploaded_file)
-        response=get_gemini_response(input_prompt1,pdf_content,input_text)
-        st.subheader("The Repsonse is")
+        pdf_content = input_pdf_setup(uploaded_file)
+        response = get_gemini_response(input_prompt1, pdf_content, input_text)
+        st.subheader("The Response is")
         st.write(response)
     else:
-        st.write("Please uplaod the resume")
+        st.write("Please upload the resume")
 
 elif submit2:
     if uploaded_file is not None:
-        pdf_content=input_pdf_setup(uploaded_file)
-        response=get_gemini_response(input_prompt2,pdf_content,input_text)
-        st.subheader("The Repsonse is")
+        pdf_content = input_pdf_setup(uploaded_file)
+        response = get_gemini_response(input_prompt2, pdf_content, input_text)
+        st.subheader("The Response is")
         st.write(response)
     else:
-        st.write("Please uplaod the resume")
+        st.write("Please upload the resume")
 
 elif submit3:
     if uploaded_file is not None:
-        pdf_content=input_pdf_setup(uploaded_file)
-        response=get_gemini_response(input_prompt3,pdf_content,input_text)
-        st.subheader("The Repsonse is")
+        pdf_content = input_pdf_setup(uploaded_file)
+        response = get_gemini_response(input_prompt3, pdf_content, input_text)
+        st.subheader("The Response is")
         st.write(response)
     else:
-        st.write("Please uplaod the resume")
+        st.write("Please upload the resume")
 
 elif submit4:
     if uploaded_file is not None:
-        pdf_content=input_pdf_setup(uploaded_file)
-        response=get_gemini_response(input_prompt4,pdf_content,input_text)
-        st.subheader("The Repsonse is")
+        pdf_content = input_pdf_setup(uploaded_file)
+        response = get_gemini_response(input_prompt4, pdf_content, input_text)
+        st.subheader("The Response is")
         st.write(response)
     else:
-        st.write("Please uplaod the resume")
+        st.write("Please upload the resume")
 
 elif submit5:
     if uploaded_file is not None:
-        pdf_content=input_pdf_setup(uploaded_file)
-        response=get_gemini_response(input_prompt5,pdf_content,input_text)
-        st.subheader("The Repsonse is")
+        pdf_content = input_pdf_setup(uploaded_file)
+        response = get_gemini_response(input_prompt5, pdf_content, input_text)
+        st.subheader("The Response is")
         st.write(response)
     else:
-        st.write("Please uplaod the resume")
+        st.write("Please upload the resume")
 
 elif submit6:
     if uploaded_file is not None:
-        pdf_content=input_pdf_setup(uploaded_file)
-        response=get_gemini_response(input_prompt6,pdf_content,input_text)
-        st.subheader("The Repsonse is")
+        pdf_content = input_pdf_setup(uploaded_file)
+        response = get_gemini_response(input_prompt6, pdf_content, input_text)
+        st.subheader("The Response is")
         st.write(response)
     else:
-        st.write("Please uplaod the resume")
-
-
-
-   
-
-
-
-
+        st.write("Please upload the resume")
